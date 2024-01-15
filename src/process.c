@@ -49,6 +49,8 @@ void sem_post(sem *s)
 
 void scheduler_init()
 {
+	TCCR2B = 0b00000100; // Clock / 256 soit 16 micro-s et WGM22 = 0
+  	TIMSK2 = 0b00000001; // Interruption locale autorisée par TOIE2
 	int i = 0;
 	while (i < MAX_PROCESSES)
 	{
@@ -131,5 +133,29 @@ void scheduler_switch()
 	else
 	{
 		// TODO: handle error: unknow process state
+	}
+}
+
+int 	tick = 0;
+int		white_state = 0;
+
+ISR(TIMER2_OVF_vect)
+{
+
+	tick += 1;
+	if (tick >= 500)
+	{
+		if (!white_state)
+		{
+		//	pin_write(white_light, 1);
+			white_state = 1;
+		}
+		else
+		{
+		//	pin_write(white_light, 0);
+			white_state = 0;
+		}
+		tick = 0;
+		scheduler_switch();
 	}
 }
