@@ -8,30 +8,7 @@
 # endif
 # include <stdarg.h>
 # include <stdint.h>
-
-typedef void (*process_function)(void);
-typedef enum
-{
-	UNDEFINED = 0,
-	NOT_RUNNING,
-	RUNNING,
-	PAUSED
-}	process_state;
-
-typedef struct
-{
-	uint16_t			stack_pointer;
-	process_function	f;
-	process_state		state;
-	uint8_t 			stack[STACK_SIZE];
-
-}	process;
-void	scheduler_init();
-void	process_run(process_function f);
-void	scheduler_run();
-void 	scheduler_switch_to();
-
-#define SAVE_CONTEXT()						\
+# define SAVE_CONTEXT()						\
   asm volatile (						\
 		"push	r0				\n\t"	\
 		"in		r0, __SREG__	\n\t"		\
@@ -69,9 +46,7 @@ void 	scheduler_switch_to();
 		"push	r30				\n\t"	\
 		"push	r31				\n\t"	\
 		 );
-
-
-#define RESTORE_CONTEXT()					\
+# define RESTORE_CONTEXT()				\
   asm volatile (						\
 		"pop	r31				\n\t"	\
 		"pop	r30				\n\t"	\
@@ -105,9 +80,43 @@ void 	scheduler_switch_to();
 		"pop	r2				\n\t"	\
 		"pop	r1				\n\t"	\
 		"pop	r0				\n\t"	\
-		"out 	__SREG__, r0	\n\t"			\
+		"out 	__SREG__, r0	\n\t"	\
 		"pop	r0				\n\t"	\
 		 );
+# define DEFAULT_SEM ((sem) {.size = 0})
+typedef void (*process_function)(void);
+typedef enum
+{
+	UNDEFINED = 0,
+	NOT_RUNNING,
+	RUNNING,
+	BLOCKED
+}	process_state;
+
+typedef struct
+{
+	uint16_t			stack_pointer;
+	process_function	f;
+	process_state		state;
+	uint8_t 			stack[STACK_SIZE];
+
+}	process;
+
+typedef struct
+{
+	uint8_t		queue[MAX_PROCESSES];
+	uint8_t		size;
+}	sem;
+
+sem 	sem_init();
+void	sem_wait(sem *s);
+void	sem_post(sem *s);
+void	scheduler_init();
+void	process_run(process_function f);
+void	scheduler_run();
+void 	scheduler_switch();
+
+
 
 
 #endif
