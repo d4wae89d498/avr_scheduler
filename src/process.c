@@ -13,7 +13,7 @@ void	scheduler_init()
 	int i = 0;
 	while (i < MAX_PROCESSES)
 	{
-		processes[i++] = (process) {
+		processes[i] = (process) {
 			.f = NULL,
 			.stack_pointer = 0,
 			.state = UNDEFINED
@@ -32,10 +32,6 @@ void process_run(process_function f)
 {
 	processes[nb_processes].f = f;
 	processes[nb_processes].state = NOT_RUNNING;
-	//if (nb_processes)
-	//	processes[nb_processes].stack_pointer = 0x500;
-	//else
-	//	processes[nb_processes].stack_pointer = 0x700;
 	processes[nb_processes].stack_pointer = (uint16_t) processes[nb_processes].stack + STACK_SIZE - 1;
 	nb_processes += 1;
 
@@ -43,38 +39,30 @@ void process_run(process_function f)
 void	scheduler_switch_to()
 {
 	static int 	task;
-	if (nb_processes < 2)
+	if (nb_processes < 1)
         return;
 	cli();
-	PRINT("current task was: ");
+    SAVE_CONTEXT();
+    processes[task].stack_pointer = SP;
+    task++;
+    if(task >= nb_processes)
+       task = 0;
+	PRINT("new task: ");
 	usart_write_char('0' + task);
-	PRINT(": ");
-	if (processes[task].state == RUNNING)
+	PRINT_NL("");
+    SP = processes[task].stack_pointer;
+    if(processes[task].state == RUNNING)
 	{
-		PRINT_NL("running task has paused");
-		SAVE_CONTEXT();
-		processes[task].stack_pointer = SP;
-	}
+       RESTORE_CONTEXT();
+    }
+	else if (processes[task].state == NOT_RUNNING)
+	{
+       processes[task].state = RUNNING;
+       sei();
+       processes[task].f();
+    }
 	else
-		PRINT_NL("was not running");
-	task = !task;
-	PRINT("new task is: ");
-	usart_write_char('0' + task);
-	PRINT(": ");
-	SP = processes[task].stack_pointer;
-	if (processes[task].state == NOT_RUNNING)
 	{
-		PRINT_NL(" launching task");
-		process_function f = processes[task].f;
-		processes[task].state = RUNNING;
-		f();
+
 	}
-	else if (processes[task].state == RUNNING)
-	{
-		PRINT_NL(" resuming");
-		RESTORE_CONTEXT();
-		sei();
-	}
-	else
-		; // TODO : handle error
 }

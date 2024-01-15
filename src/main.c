@@ -51,21 +51,8 @@ static void	setup(void)
   	TIMSK2 = 0b00000001; // Interruption locale autorisée par TOIE2
 }
 
-void 		task_internal()
-{
-	sei();
-	while (1)
-	{
-		pin_write(internal_light, 0);
-		_delay_ms(700);
-		pin_write(internal_light, 1);
-		_delay_ms(700);
-	}
-}
-
 void		task_red()
 {
-	sei();
 	while (1)
 	{
 		pin_write(red_light, 0);
@@ -77,18 +64,25 @@ void		task_red()
 
 void		task_blue()
 {
-	sei();
-	int i = 0;
 	while (1)
 	{
 		pin_write(blue_light, 1);
 		_delay_ms(700);
-	//	cli();
+		pin_write(blue_light, 0);
+		_delay_ms(700);
+	}
+}
+
+
+void		task_serial()
+{
+	int i = 0;
+	while (1)
+	{
+		_delay_ms(700);
 		PRINT("c: [");
 		usart_write_char('0' + i);
 		PRINT_NL("]");
-	//y	sei();
-		pin_write(blue_light, 0);
 		_delay_ms(700);
 		i = i + 1;
 		if (i >= 10)
@@ -96,18 +90,16 @@ void		task_blue()
 	}
 }
 
+
 int 	tick = 0;
 int		white_state = 0;
-int		t = 0;
 
 ISR(TIMER2_OVF_vect)
 {
 
 	tick += 1;
-	if (tick >= 1500)
+	if (tick >= 500)
 	{
-		t += 1;
-
 		if (!white_state)
 		{
 			pin_write(white_light, 1);
@@ -118,11 +110,8 @@ ISR(TIMER2_OVF_vect)
 			pin_write(white_light, 0);
 			white_state = 0;
 		}
-
 		tick = 0;
 		scheduler_switch_to();
-		//task_blue();
-		//SP = 0x89;
 	}
 }
 
@@ -133,7 +122,8 @@ int main(void) {
 
 
 	process_run(task_blue);
-	process_run(task_internal);
+	process_run(task_serial);
+	process_run(task_red);
 
 	sei();
 

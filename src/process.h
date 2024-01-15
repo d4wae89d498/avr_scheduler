@@ -1,10 +1,10 @@
 #ifndef PROCESS_H
 # define PROCESS_H
 # ifndef MAX_PROCESSES
-#  define MAX_PROCESSES 2
+#  define MAX_PROCESSES 9
 # endif
 # ifndef STACK_SIZE
-#  define STACK_SIZE 256
+#  define STACK_SIZE 128
 # endif
 # include <stdarg.h>
 # include <stdint.h>
@@ -15,6 +15,7 @@ typedef enum
 	UNDEFINED = 0,
 	NOT_RUNNING,
 	RUNNING,
+	PAUSED
 }	process_state;
 
 typedef struct
